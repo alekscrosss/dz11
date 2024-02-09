@@ -25,3 +25,21 @@ class Contact(ContactBase):
 
     class Config:
         orm_mode = True
+
+
+class UserCreate(BaseModel):
+    email: str
+    password: str
+
+
+class UserInDB(UserCreate):
+    hashed_password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    email: str | None = None
