@@ -4,8 +4,11 @@ import models
 import schemas
 from datetime import date, timedelta
 
+
 def get_contacts(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Contact).offset(skip).limit(limit).all()
+
+
 def create_contact(db: Session, contact: schemas.ContactCreate, user_id: int):
     new_contact = models.Contact(**contact.dict(), owner_id=user_id)
     db.add(new_contact)
@@ -13,11 +16,14 @@ def create_contact(db: Session, contact: schemas.ContactCreate, user_id: int):
     db.refresh(new_contact)
     return new_contact
 
+
 def get_user_contacts(db: Session, user_id: int, skip: int = 0, limit: int = 100):
     return db.query(models.Contact).filter(models.Contact.owner_id == user_id).offset(skip).limit(limit).all()
 
+
 def get_contact(db: Session, contact_id: int, user_id: int):
     return db.query(models.Contact).filter(models.Contact.id == contact_id, models.Contact.owner_id == user_id).first()
+
 
 def update_contact(db: Session, contact_id: int, contact: schemas.ContactUpdate, user_id: int):
     db_contact = get_contact(db, contact_id, user_id)
@@ -27,6 +33,7 @@ def update_contact(db: Session, contact_id: int, contact: schemas.ContactUpdate,
         db.commit()
         db.refresh(db_contact)
     return db_contact
+
 
 def delete_contact(db: Session, contact_id: int, user_id: int):
     db_contact = get_contact(db, contact_id, user_id)
