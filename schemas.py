@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+# файл schemas.py
+
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import date
 
@@ -24,7 +26,7 @@ class Contact(ContactBase):
     id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserCreate(BaseModel):
@@ -43,3 +45,6 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: str | None = None
+
+class UserAvatarUpdate(BaseModel):
+    avatar_url: Optional[str] = Field(None, description="URL аватара пользователя")

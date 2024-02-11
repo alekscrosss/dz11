@@ -1,6 +1,8 @@
-from sqlalchemy import Column, Integer, String, Date, create_engine, Boolean, ForeignKey
+# файл models.py
+
+from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey, create_engine
+from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
 
 Base = declarative_base()
 
@@ -12,6 +14,8 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
+    verification_code = Column(String, unique=True, nullable=True)  # Изменено с verification_token на verification_code
 
 
 class Contact(Base):
@@ -23,11 +27,13 @@ class Contact(Base):
     phone_number = Column(String, index=True)
     birthday = Column(Date)
     additional_info = Column(String, nullable=True)
-    owner_id = Column(Integer, ForeignKey('user.id'))
+    owner_id = Column(Integer, ForeignKey('users.id'))  # Исправлено с 'user.id' на 'users.id'
     owner = relationship("User")
 
 
 DATABASE_URL = "postgresql://alex:123456789@db/dbalex"
+
+
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

@@ -1,9 +1,17 @@
+# файл crud.py
+
 from security import get_password_hash
 from sqlalchemy.orm import Session
 import models
 import schemas
 from datetime import date, timedelta
+from email_verif import send_verification_email
+from image_upload import upload_image
 
+def code_generation(length=6):
+    import random
+    import string
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 def get_contacts(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.Contact).offset(skip).limit(limit).all()
@@ -49,10 +57,19 @@ def get_user_by_email(db: Session, email: str):
 
 def create_user(db: Session, user: schemas.UserCreate):
     fake_hashed_password = get_password_hash(user.password)
-    db_user = models.User(email=user.email, hashed_password=fake_hashed_password)
+    verification_code = code_generation()
+    db_user = models.User(
+        email=user.email,
+        hashed_password=fake_hashed_password,
+        verification_code=verification_code
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+
+    # Отправляем письмо с кодом верификации
+    send_verification_email(user.email, verification_code)
+
     return db_user
 
 
@@ -64,3 +81,13 @@ def get_upcoming_birthdays(db: Session, user_id: int, days: int = 7):
         models.Contact.birthday >= today,
         models.Contact.birthday <= end_date
     ).all()
+
+def update_user_avatar(db: Session, user_id: int, image_file):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if user:
+        avatar_url = upload_image(image_file)
+        user.avatar_url = avatar_url
+        db.commit()
+        db.refresh(user)
+        return user
+    return None

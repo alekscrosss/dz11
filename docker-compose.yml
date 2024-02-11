@@ -5,9 +5,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: alex
-      POSTGRES_PASSWORD: 123456789
-      POSTGRES_DB: dbalex
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
   fastapi:
@@ -20,7 +20,7 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgresql://alex:123456789@db/dbalex
+      DATABASE_URL: ${DATABASE_URL}
 
 volumes:
   postgres_data:

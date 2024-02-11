@@ -6,3 +6,7 @@ pydantic
 python-jose>=3.3.0
 passlib
 python-multipart
+aiosmtplib
+python-dotenv
+slowapi
+cloudinary

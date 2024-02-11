@@ -1,20 +1,54 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+# файл main.py
+
+from dotenv import load_dotenv
+from fastapi import FastAPI, Depends, HTTPException, status, File, UploadFile, Request
 from sqlalchemy.orm import Session
 from typing import List
 import crud
 import models
 import schemas
 from models import User, get_db, engine
-from schemas import UserCreate, Token, ContactCreate, Contact
+from schemas import UserCreate, Token, Contact
 from security import create_access_token, get_current_user, authenticate_user, ACCESS_TOKEN_EXPIRE_MINUTES
 from fastapi.security import OAuth2PasswordRequestForm
-
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from datetime import timedelta
+
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+limiter = Limiter(key_func=get_remote_address)
+
+load_dotenv()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Разрешите все источники
+    allow_credentials=True,
+    allow_methods=["*"],  # Разрешите все методы
+    allow_headers=["*"],  # Разрешите все заголовки
+)
+
+@app.post("/users/{user_id}/avatar")
+def update_avatar(user_id: int, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    if user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this user's avatar")
+    return crud.update_user_avatar(db=db, user_id=user_id, image_file=file.file)
+
+@app.get("/verify/{verification_code}")
+def verify_email(verification_code: str, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.verification_code == verification_code).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.is_verified = True
+    user.verification_code = None  # Удалите код после верификации
+    db.commit()
+    return {"message": "Email successfully verified"}
 
 @app.post("/users/", response_model=schemas.UserCreate)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
@@ -41,7 +75,8 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 
 
 @app.post("/contacts/", response_model=schemas.Contact)
-def create_contact(contact: schemas.ContactCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+@limiter.limit("5/minute")
+def create_contact(request: Request, contact: schemas.ContactCreate, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
     return crud.create_contact(db=db, contact=contact, user_id=current_user.id)
 
 
